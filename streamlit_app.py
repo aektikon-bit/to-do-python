@@ -1,21 +1,29 @@
 import streamlit as st
 
-st.set_page_config(page_title="Mobile To-Do", layout="centered")
+st.set_page_config(page_title="Mobile To-Do App", layout="centered")
 
 # ------------ CSS ------------
 st.markdown("""
 <style>
 
+html, body, [class*="css"] {
+    font-family: "Prompt", sans-serif;
+}
+
+/* การ์ดงาน */
 .card {
     background: white;
     padding: 14px 16px;
-    margin-bottom: 10px;
-    border-radius: 15px;
-    box-shadow: 0px 3px 12px rgba(0,0,0,0.12);
+    margin-bottom: 12px;
+    border-radius: 16px;
+    box-shadow: 0px 3px 10px rgba(0,0,0,0.12);
 }
 
+/* ข้อความงาน */
 .task-text {
     font-size: 18px;
+    display: flex;
+    align-items: center;
 }
 
 .done {
@@ -23,12 +31,16 @@ st.markdown("""
     color: gray;
 }
 
-.icon {
+.icon-btn {
     background: #f2f2f2;
     border: 1px solid #dcdcdc;
     border-radius: 10px;
     padding: 6px 10px;
     font-size: 20px;
+}
+
+.icon-btn:hover {
+    background: #e2e2e2;
 }
 
 </style>
@@ -53,26 +65,26 @@ st.write("## รายการของคุณ")
 
 for i, task in enumerate(st.session_state.tasks):
 
-    with st.container():
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
 
-        col1, col2, col3 = st.columns([0.70, 0.15, 0.15])
+    # 3 คอลัมน์: ✔ | งาน | 🗑
+    col1, col2, col3 = st.columns([0.12, 0.70, 0.18])
 
-        # ------------------ ข้อความ ------------------
-        with col1:
-            text_class = "task-text done" if task["done"] else "task-text"
-            st.markdown(f'<div class="{text_class}">{task["text"]}</div>', unsafe_allow_html=True)
+    # ------------------ ปุ่ม ✔ หน้า ------------------
+    with col1:
+        if st.button("✔", key=f"done_{i}"):
+            st.session_state.tasks[i]["done"] = not st.session_state.tasks[i]["done"]
+            st.rerun()
 
-        # ------------------ ปุ่ม ✔ ------------------
-        with col2:
-            if st.button("✔", key=f"done_{i}"):
-                st.session_state.tasks[i]["done"] = not st.session_state.tasks[i]["done"]
-                st.rerun()
+    # ------------------ ข้อความงาน ------------------
+    with col2:
+        text_class = "task-text done" if task["done"] else "task-text"
+        st.markdown(f'<div class="{text_class}">{task["text"]}</div>', unsafe_allow_html=True)
 
-        # ------------------ ปุ่ม 🗑 ------------------
-        with col3:
-            if st.button("🗑", key=f"del_{i}"):
-                st.session_state.tasks.pop(i)
-                st.rerun()
+    # ------------------ ปุ่ม 🗑 หลัง ------------------
+    with col3:
+        if st.button("🗑", key=f"del_{i}"):
+            st.session_state.tasks.pop(i)
+            st.rerun()
 
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
