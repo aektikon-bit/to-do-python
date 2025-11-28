@@ -1,50 +1,54 @@
 import streamlit as st
 
-# --- ส่วนหัว ---
-st.title("📝 My To-Do List")
-st.write("แอพบันทึกงานฉบับนักเรียน")
+# ---- CONFIG ----
+st.set_page_config(page_title="Mobile To-Do App", layout="centered")
 
-# --- ส่วนความจำ ---
-if 'tasks' not in st.session_state:
-    st.session_state.tasks = []  # เก็บเป็น list ของ dict เช่น {"text": "...", "done": False}
+# ---- CUSTOM CSS (สไตล์มือถือ) ----
+mobile_style = """
+<style>
+/* ฟอนต์กลมมน */
+html, body, [class*="css"] {
+    font-family: "Segoe UI", sans-serif;
+}
 
-# --- ส่วนเพิ่มงาน ---
-col1, col2 = st.columns([0.8, 0.2])
-with col1:
-    new_task = st.text_input("เพิ่มรายการใหม่:", placeholder="พิมพ์สิ่งที่ต้องทำ...", label_visibility="collapsed")
-with col2:
-    add_btn = st.button("เพิ่มงาน", use_container_width=True)
+/* กล่องการ์ด */
+.task-card {
+    background: #ffffff;
+    padding: 14px 18px;
+    border-radius: 18px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
-if add_btn and new_task:
-    st.session_state.tasks.append({"text": new_task, "done": False})
-    st.rerun()
+/* ปุ่ม */
+button[kind="primary"] {
+    border-radius: 12px !important;
+    padding: 10px 0px !important;
+    font-size: 18px !important;
+}
 
-# --- แสดงรายการงาน ---
-st.divider()
-st.subheader(f"รายการที่ต้องทำ ({len(st.session_state.tasks)})")
+.stTextInput > div > div > input {
+    border-radius: 12px !important;
+    padding: 12px;
+    font-size: 16px;
+}
 
-for i, task in enumerate(st.session_state.tasks):
+/* ปุ่มลบ */
+.delete-btn {
+    background: #ff4d4f;
+    color: white;
+    border-radius: 12px;
+    padding: 6px 10px;
+    font-size: 20px;
+    border: none;
+}
 
-    c1, c2, c3 = st.columns([0.1, 0.75, 0.15])
+</style>
+"""
+st.markdown(mobile_style, unsafe_allow_html=True)
 
-    # checkbox ทำเครื่องหมายเสร็จ
-    with c1:
-        done = st.checkbox("", value=task["done"], key=f"done_{i}")
-        st.session_state.tasks[i]["done"] = done
-
-    # แสดงข้อความงาน
-    with c2:
-        if done:
-            st.success(f"~~{task['text']}~~ ✔")
-        else:
-            st.write(task["text"])
-
-    # ปุ่มลบงาน
-    with c3:
-        if st.button("❌", key=f"del_{i}"):
-            st.session_state.tasks.pop(i)
-            st.rerun()
-
-# --- ส่วนท้าย ---
-if len(st.session_state.tasks) == 0:
-    st.info("ยังไม่มีงานค้าง เย้! 🎉")
+# ---- STATE ----
+if "task
