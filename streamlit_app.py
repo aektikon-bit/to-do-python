@@ -57,7 +57,7 @@ if "tasks" not in st.session_state:
     st.session_state.tasks = []
 
 # ---------------- INPUT ----------------
-st.title("🧾 To-Do List")
+st.title("🧾 ASL To-Do ")
 
 new_task = st.text_input("", placeholder="เพิ่มงาน...")
 
