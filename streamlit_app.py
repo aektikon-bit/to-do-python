@@ -1,9 +1,8 @@
 import streamlit as st
 
-# ---------------- CONFIG ----------------
 st.set_page_config(page_title="Mobile To-Do App", layout="centered")
 
-# ---------------- CSS (ดีไซน์ใหม่ทั้งหมด) ----------------
+# ---------------- CSS ----------------
 css = """
 <style>
 
@@ -11,46 +10,24 @@ html, body, [class*="css"] {
     font-family: "Prompt", sans-serif;
 }
 
-h1 {
-    font-weight: 700;
-}
-
-/* กล่องอินพุต */
-.stTextInput > div > div > input {
-    border-radius: 14px !important;
-    padding: 13px 14px !important;
-    font-size: 17px !important;
-    border: 1.5px solid #d9d9d9;
-}
-
-/* ปุ่มหลัก */
-.stButton > button {
-    background: #4a90e2 !important;
-    color: white !important;
-    border-radius: 14px !important;
-    padding: 12px 0px !important;
-    font-size: 18px !important;
-    border: none !important;
-}
-
-/* การ์ดรายการ */
 .task-card {
     background: white;
-    border-radius: 18px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
-    box-shadow: 0px 3px 12px rgba(0,0,0,0.12);
+    border-radius: 16px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0px 3px 10px rgba(0,0,0,0.10);
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: center;      /* <<< ทำให้ปุ่มและข้อความอยู่กึ่งกลางแนวตั้ง */
 }
 
 /* ข้อความงาน */
 .task-text {
     font-size: 18px;
+    flex-grow: 1;             /* <<< ทำให้กินพื้นที่ด้านซ้าย */
+    padding-right: 10px;
 }
 
-/* สถานะงานเสร็จ */
 .done {
     text-decoration: line-through;
     color: #8d8d8d;
@@ -58,15 +35,17 @@ h1 {
 
 /* ปุ่มไอคอน */
 .icon-btn {
-    background: #f5f5f5;
+    background: #f0f0f0;
     border-radius: 12px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     font-size: 20px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #dcdcdc;
+    cursor: pointer;
+    margin-left: 6px;
 }
 
 .icon-btn:hover {
-    background: #dedede;
+    background: #e2e2e2;
 }
 
 </style>
@@ -77,58 +56,47 @@ st.markdown(css, unsafe_allow_html=True)
 if "tasks" not in st.session_state:
     st.session_state.tasks = []
 
-# ---------------- HEADER ----------------
-st.markdown(
-    "<h1 style='text-align:center; font-size:40px;'>🧾 To-Do List</h1>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    "<p style='text-align:center; font-size:18px; color:gray;'>สไตล์แอปมือถือที่สวยและใช้งานง่าย</p>",
-    unsafe_allow_html=True
-)
-
-st.write("")
-
 # ---------------- INPUT ----------------
-new_task = st.text_input("", placeholder="เพิ่มงานใหม่ เช่น ทำการบ้านคณิต", label_visibility="collapsed")
+st.title("🧾 To-Do List")
 
-st.write("")
+new_task = st.text_input("", placeholder="เพิ่มงาน...")
+
 if st.button("เพิ่มงาน", use_container_width=True):
     if new_task.strip():
         st.session_state.tasks.append({"text": new_task, "done": False})
         st.rerun()
 
+# ---------------- LIST ----------------
 st.write("## รายการของคุณ")
 
-# ---------------- LIST DISPLAY ----------------
+for i, task in enumerate(st.session_state.tasks):
+    
+    text_class = "task-text done" if task["done"] else "task-text"
 
-if not st.session_state.tasks:
-    st.info("🎉 เยี่ยมมาก! ไม่มีงานค้างแล้ว")
-else:
-    for i, task in enumerate(st.session_state.tasks):
-        text_class = "task-text done" if task["done"] else "task-text"
+    st.markdown(
+        f"""
+        <div class="task-card">
+            <div class="{text_class}">
+                {task['text']}
+            </div>
+            <div>
+                <form action="" method="post">
+                    <button class="icon-btn" type="submit" name="done_{i}">✔</button>
+                    <button class="icon-btn" type="submit" name="del_{i}">🗑</button>
+                </form>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-        st.markdown(
-            f"""
-            <div class="task-card">
-                <div class="{text_class}">
-                    {task['text']}
-                </div>
-                <div style='display:flex; gap:8px;'>
-            """,
-            unsafe_allow_html=True
-        )
+    # จัดการปุ่มใน form
+    if f"done_{i}" in st.session_state:
+        st.session_state.tasks[i]["done"] = not st.session_state.tasks[i]["done"]
+        st.session_state.pop(f"done_{i}", None)
+        st.rerun()
 
-        col1, col2 = st.columns([0.2, 0.2])
-
-        with col1:
-            if st.button("✔️", key=f"done_{i}"):
-                st.session_state.tasks[i]["done"] = not st.session_state.tasks[i]["done"]
-                st.rerun()
-
-        with col2:
-            if st.button("🗑️", key=f"del_{i}"):
-                st.session_state.tasks.pop(i)
-                st.rerun()
-
-        st.markdown("</div></div>", unsafe_allow_html=True)
+    if f"del_{i}" in st.session_state:
+        st.session_state.tasks.pop(i)
+        st.session_state.pop(f"del_{i}", None)
+        st.rerun()
