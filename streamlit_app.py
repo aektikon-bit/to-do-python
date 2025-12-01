@@ -1,1 +1,146 @@
-import streamlit as st st.set_page_config(page_title="Mobile To-Do App", layout="centered") # ------------ CSS ------------ st.markdown(""" <style> html, body, [class*="css"] { font-family: "Prompt", sans-serif; } /* การ์ดงาน */ .card { background: white; padding: 14px 16px; margin-bottom: 12px; border-radius: 16px; box-shadow: 0px 3px 10px rgba(0,0,0,0.12); } /* ข้อความงาน */ .task-text { font-size: 18px; display: flex; align-items: center; } .done { text-decoration: line-through; color: gray; } .icon-btn { background: #f2f2f2; border: 1px solid #dcdcdc; border-radius: 10px; padding: 6px 10px; font-size: 20px; } .icon-btn:hover { background: #e2e2e2; } </style> """, unsafe_allow_html=True) # ------------ STATE ------------ if "tasks" not in st.session_state: st.session_state.tasks = [] # ------------ INPUT ------------ st.title("🧾 To-Do List") new_task = st.text_input("", placeholder="เพิ่มงานใหม่...") if st.button("เพิ่มงาน", use_container_width=True): if new_task.strip(): st.session_state.tasks.append({"text": new_task, "done": False}) st.rerun() # ------------ TASK LIST ------------ st.write("## รายการของคุณ") for i, task in enumerate(st.session_state.tasks): st.markdown('<div class="card">', unsafe_allow_html=True) # 3 คอลัมน์: ✔ | งาน | 🗑 col1, col2, col3 = st.columns([0.12, 0.70, 0.18]) # ------------------ ปุ่ม ✔ หน้า ------------------ with col1: if st.button("✔", key=f"done_{i}"): st.session_state.tasks[i]["done"] = not st.session_state.tasks[i]["done"] st.rerun() # ------------------ ข้อความงาน ------------------ with col2: text_class = "task-text done" if task["done"] else "task-text" st.markdown(f'<div class="{text_class}">{task["text"]}</div>', unsafe_allow_html=True) # ------------------ ปุ่ม 🗑 หลัง ------------------ with col3: if st.button("🗑", key=f"del_{i}"): st.session_state.tasks.pop(i) st.rerun() st.markdown('</div>', unsafe_allow_html=True)
+import streamlit as st
+import json
+import datetime
+from datetime import datetime as dt
+from datetime import timedelta
+
+st.set_page_config(page_title="To-Do App", page_icon="📝", layout="wide")
+
+# -------------------- CSS --------------------
+def local_css():
+    st.markdown(
+        """
+    <style>
+    body {
+        background: linear-gradient(120deg, #f6f9fc, #eef2f3);
+        font-family: 'Segoe UI';
+    }
+    .task-card {
+        background: white;
+        padding: 18px;
+        border-radius: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        transition: 0.3s;
+    }
+    .task-card:hover {
+        box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    }
+    .deadline-text {
+        color: #ff4b4b;
+        font-weight: 600;
+    }
+    .progress-bar {
+        height: 10px;
+        border-radius: 10px;
+        background: #e5e5e5;
+    }
+    .progress-fill {
+        height: 10px;
+        border-radius: 10px;
+        background: #4CAF50;
+    }
+    </style>
+    """, unsafe_allow_html=True
+    )
+
+local_css()
+
+# -------------------- SESSION STATE --------------------
+if "tasks" not in st.session_state:
+    st.session_state.tasks = []
+
+# -------------------- ADD TASK --------------------
+st.title("📝 To-Do List App (Enhanced Version)")
+
+with st.container():
+    st.subheader("➕ เพิ่มงานใหม่")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        task_name = st.text_input("ชื่องาน")
+    with col2:
+        deadline = st.date_input("เดดไลน์", value=datetime.date.today())
+
+    progress = st.slider("ความคืบหน้า (%)", 0, 100, 0)
+
+    if st.button("เพิ่มงาน"):
+        st.session_state.tasks.append({
+            "name": task_name,
+            "deadline": str(deadline),
+            "progress": progress,
+            "completed": False
+        })
+        st.success("เพิ่มงานแล้ว!")
+
+# -------------------- SHOW TASKS --------------------
+st.subheader("📌 รายการงาน")
+
+now = dt.now().date()
+
+for i, task in enumerate(st.session_state.tasks):
+    deadline_date = dt.strptime(task["deadline"], "%Y-%m-%d").date()
+    remaining_days = (deadline_date - now).days
+
+    with st.container():
+        st.markdown(f"<div class='task-card'>", unsafe_allow_html=True)
+
+        colA, colB = st.columns([6, 1])
+
+        with colA:
+            st.markdown(f"### {task['name']}")
+            st.markdown(
+                f"🗓 เดดไลน์: <span class='deadline-text'>{task['deadline']}</span>",
+                unsafe_allow_html=True
+            )
+
+            # -------------------- Progress Bar --------------------
+            st.markdown("ความคืบหน้า:")
+            st.markdown(
+                f"""
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width:{task['progress']}%"></div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            if remaining_days <= 1:
+                st.audio("https://upload.wikimedia.org/wikipedia/commons/c/cf/Alert-tone.mp3")
+                st.warning("⏰ งานนี้ใกล้ถึงเดดไลน์แล้ว!")
+
+        with colB:
+            if st.button("✔", key=f"done{i}"):
+                task["completed"] = True
+                st.success("งานเสร็จแล้ว!")
+
+            if st.button("🗑", key=f"delete{i}"):
+                st.session_state.tasks.pop(i)
+                st.rerun()
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# -------------------- CALENDAR VIEW --------------------
+st.subheader("📅 ปฏิทินงาน")
+
+calendar_date = st.date_input("เลือกวันที่เพื่อดูงานของวันนั้น", value=now)
+
+day_tasks = [
+    t for t in st.session_state.tasks
+    if t["deadline"] == str(calendar_date)
+]
+
+if day_tasks:
+    st.write("งานของวันนั้น:")
+    for t in day_tasks:
+        st.write("- ", t["name"])
+else:
+    st.write("ไม่มีงานในวันนี้")
+
+# -------------------- SHARE TASKS --------------------
+st.subheader("📤 แชร์งานให้เพื่อน")
+
+export_data = json.dumps(st.session_state.tasks)
+
+st.code(export_data, language="json")
+st.info("เพื่อนนำ JSON นี้ไปวางในแอปได้เลยเพื่อโหลดงานเข้าไป")
