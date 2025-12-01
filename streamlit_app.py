@@ -79,7 +79,7 @@ if "tasks" not in st.session_state:
     st.session_state.tasks = []
 
 # -------------------- Add Task --------------------
-st.title("📝 To-Do List App (Enhanced Version)")
+st.title("📝 ASL To-Do ")
 
 st.subheader("➕ เพิ่มงานใหม่")
 
