@@ -1,147 +1,258 @@
 import streamlit as st
 import json
-import datetime
-from datetime import datetime as dt
+from datetime import datetime as dt, date
+import base64
 
-st.set_page_config(page_title="To-Do App", page_icon="📝", layout="wide")
+# -------------------- Config --------------------
+st.set_page_config(page_title="🎄 ASL To-Do App 📝", layout="wide")
 
-# -------------------- CSS --------------------
-st.markdown("""
+# -------------------- Dark Mode --------------------
+dark_mode = st.sidebar.checkbox("🌙 Dark Mode", value=False)
+if dark_mode:
+    BG = "#1c1c1c"
+    CARD_BG = "#2c2f33"
+    TEXT = "#e4e6eb"
+    PROG_FILL = "#4caf50"
+else:
+    BG = "linear-gradient(135deg, #ff4b4b, #28a745)"
+    CARD_BG = "rgba(255,255,255,0.9)"
+    TEXT = "#111"
+    PROG_FILL = "#ff4b4b"
+
+# -------------------- CSS + Snow + Gift --------------------
+st.markdown(f"""
 <style>
-body {
-    background: linear-gradient(120deg, #f6f9fc, #eef2f3);
-    font-family: 'Segoe UI';
-}
-
-/* Task Card */
-.task-card {
-    background: white;
+body {{
+    background: {BG};
+    color: {TEXT};
+    font-family: 'Segoe UI', sans-serif;
+}}
+.task-card {{
+    background: {CARD_BG};
+    color: #111;
     padding: 18px;
-    border-radius: 15px;
+    border-radius: 18px;
     margin-bottom: 15px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    transition: 0.3s;
-}
-.task-card:hover {
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-}
-
-/* New Card Animation */
-.task-card.new {
-    animation: cardPop 0.6s ease-out;
-}
-@keyframes cardPop {
-    0% { opacity: 0; transform: translateY(25px) scale(0.95); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Deadline text */
-.deadline-text {
-    color: #ff4b4b;
-    font-weight: 600;
-}
-
-/* Progress bar */
-.progress-bar {
-    height: 10px;
-    border-radius: 10px;
-    background: #e5e5e5;
-}
-.progress-fill {
-    height: 10px;
-    border-radius: 10px;
-    background: #4CAF50;
-}
-
-/* Popup Notification */
-.popup {
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}}
+.task-card:hover {{
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}}
+.task-card.new {{
+    animation: slideFade 0.7s ease-out;
+}}
+@keyframes slideFade {{
+    0% {{opacity: 0; transform: translateX(50px);}}
+    100% {{opacity: 1; transform: translateX(0);}}
+}}
+.priority-high {{background-color:#ff0000; color:white;}}
+.priority-medium {{background-color:#28a745; color:white;}}
+.priority-low {{background-color:#FFD700; color:black;}}
+.deadline-text {{font-weight: 700; color:#d40000;}}
+.progress-bar {{height: 10px; border-radius: 10px; background: #eee;}}
+.progress-fill {{height: 10px; border-radius: 10px; background: {PROG_FILL};}}
+.popup {{
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #4CAF50;
+    background: #28a745;
     color: white;
     padding: 15px 25px;
     border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
     opacity: 0;
     transform: translateY(-20px);
-    animation: popupFade 0.7s forwards;
-}
-@keyframes popupFade {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+    animation: popupShow 0.5s forwards, popupFadeOut 0.5s 2.5s forwards;
+    z-index:999;
+}}
+@keyframes popupShow {{
+    from {{opacity: 0; transform: translateY(-20px);}}
+    to {{opacity: 1; transform: translateY(0);}}
+}}
+@keyframes popupFadeOut {{
+    from {{opacity:1;}}
+    to {{opacity:0; transform: translateY(-20px);}}
+}}
+button:hover {{
+    transform: scale(1.1) rotate(-2deg);
+    transition: transform 0.2s;
+}}
+
+/* Snow + Gift Animation */
+.snowflake, .gift {{
+  position: fixed;
+  top: -10px;
+  z-index: 9999;
+  user-select: none;
+  pointer-events: none;
+  font-size: 1.2em;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  opacity: 0.8;
+}}
+.snowflake {{
+  color: white;
+  animation-name: fallSnow;
+}}
+@keyframes fallSnow {{
+  0% {{transform: translateY(0) translateX(0);}}
+  100% {{transform: translateY(100vh) translateX(50px);}}
+}}
+.gift {{
+  animation-name: fallGift;
+}}
+@keyframes fallGift {{
+  0% {{transform: translateY(0) rotate(0deg);}}
+  100% {{transform: translateY(100vh) rotate(360deg);}}
+}}
 </style>
+<script>
+const snowCount = 50;
+const giftCount = 20;
+for(let i=0; i<snowCount; i++){{
+    const snow = document.createElement('div');
+    snow.className = 'snowflake';
+    snow.style.left = Math.random() * window.innerWidth + 'px';
+    snow.style.animationDuration = 5 + Math.random() * 5 + 's';
+    snow.style.fontSize = 12 + Math.random() * 24 + 'px';
+    snow.innerHTML = '❄️';
+    document.body.appendChild(snow);
+}}
+for(let i=0; i<giftCount; i++){{
+    const gift = document.createElement('div');
+    gift.className = 'gift';
+    gift.style.left = Math.random() * window.innerWidth + 'px';
+    gift.style.animationDuration = 6 + Math.random() * 6 + 's';
+    gift.style.fontSize = 18 + Math.random() * 24 + 'px';
+    gift.innerHTML = '🎁';
+    document.body.appendChild(gift);
+}}
+</script>
 """, unsafe_allow_html=True)
 
 # -------------------- Session State --------------------
 if "tasks" not in st.session_state:
     st.session_state.tasks = []
+if "sound_played" not in st.session_state:
+    st.session_state.sound_played = set()
+
+# -------------------- Title --------------------
+st.title("🎄 ASL To-Do App 📝")
 
 # -------------------- Add Task --------------------
-st.title("📝 ASL To-Do ")
-
 st.subheader("➕ เพิ่มงานใหม่")
-
-col1, col2 = st.columns(2)
+col1, col2, col3, col4 = st.columns([3,3,3,3])
 with col1:
-    task_name = st.text_input("ชื่องาน")
+    task_name = st.text_input("ชื่องาน 🎁")
 with col2:
-    deadline = st.date_input("เดดไลน์", value=datetime.date.today())
+    deadline = st.date_input("เดดไลน์", value=date.today())
+with col3:
+    category = st.text_input("หมวดหมู่ 🎄")
+with col4:
+    priority = st.selectbox("Priority", ["High","Medium","Low"])
+num_sub = st.number_input("จำนวนงานย่อย", min_value=0, max_value=10, value=0, step=1)
 
-progress = st.slider("ความคืบหน้า (%)", 0, 100, 0)
+subtasks = []
+for i in range(num_sub):
+    sub_name = st.text_input(f"งานย่อย {i+1} ชื่อ", key=f"sub{i}")
+    subtasks.append({"name": sub_name, "completed": False})
 
 if st.button("เพิ่มงาน"):
     st.session_state.tasks.append({
         "name": task_name,
         "deadline": str(deadline),
-        "progress": progress,
+        "category": category.strip(),
+        "priority": priority,
+        "subtasks": subtasks,
         "completed": False,
         "new": True
     })
+    st.markdown("<div class='popup'>เพิ่มงานสำเร็จ! 🎉🎄</div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='popup'>เพิ่มงานสำเร็จ! 🎉</div>", unsafe_allow_html=True)
+# -------------------- Filter --------------------
+st.subheader("🔎 กรองงาน")
+filter_category = st.text_input("กรองตามหมวดหมู่")
+filter_priority = st.selectbox("กรองตาม Priority", ["All","High","Medium","Low"])
+
+# -------------------- Progress Summary --------------------
+total = len(st.session_state.tasks)
+done = sum(1 for t in st.session_state.tasks if t["completed"])
+if total > 0:
+    st.progress(done / total)
+    st.write(f"✔ งานเสร็จแล้ว {done}/{total} งาน 🎅")
+else:
+    st.write("ยังไม่มีงาน")
 
 # -------------------- Show Tasks --------------------
 st.subheader("📌 รายการงาน")
-
-now = dt.now().date()
-
+today = dt.now().date()
 for i, task in enumerate(st.session_state.tasks):
-    deadline_date = dt.strptime(task["deadline"], "%Y-%m-%d").date()
-    remaining_days = (deadline_date - now).days
+    if filter_category and task["category"] != filter_category:
+        continue
+    if filter_priority != "All" and task["priority"] != filter_priority:
+        continue
 
-    card_class = "task-card new" if task.get("new") else "task-card"
+    if task["subtasks"]:
+        completed_sub = sum(1 for s in task["subtasks"] if s["completed"])
+        progress = int(completed_sub / len(task["subtasks"]) * 100)
+    else:
+        progress = 0 if not task["completed"] else 100
+
+    if task["priority"]=="High":
+        card_class = "task-card new priority-high"
+    elif task["priority"]=="Medium":
+        card_class = "task-card new priority-medium"
+    else:
+        card_class = "task-card new priority-low"
+
     st.markdown(f"<div class='{card_class}'>", unsafe_allow_html=True)
 
-    colA, colB = st.columns([6, 1])
-
+    colA, colB = st.columns([6,1])
     with colA:
         st.markdown(f"### {task['name']}")
-        st.markdown(
-            f"🗓 เดดไลน์: <span class='deadline-text'>{task['deadline']}</span>",
-            unsafe_allow_html=True
-        )
-
+        st.markdown(f"🗓 เดดไลน์: <span class='deadline-text'>{task['deadline']}</span>", unsafe_allow_html=True)
+        if task["category"]:
+            st.markdown(f"📂 หมวดหมู่: {task['category']}")
+        st.markdown(f"🔹 Priority: {task['priority']}")
         st.markdown("ความคืบหน้า:")
         st.markdown(
             f"""
             <div class="progress-bar">
-                <div class="progress-fill" style="width:{task['progress']}%"></div>
+                <div class="progress-fill" style="width:{progress}%"></div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-        if remaining_days <= 1:
+        # Sub-task
+        if task["subtasks"]:
+            st.markdown("**งานย่อย:**")
+            for j, sub in enumerate(task["subtasks"]):
+                col1, col2 = st.columns([8,2])
+                with col1:
+                    st.write(sub["name"])
+                with col2:
+                    if st.checkbox("✔", key=f"{i}_sub_{j}", value=sub["completed"]):
+                        sub["completed"] = True
+                    else:
+                        sub["completed"] = False
+
+        # แจ้งเตือนเสียง
+        deadline_date = dt.strptime(task["deadline"], "%Y-%m-%d").date()
+        remaining_days = (deadline_date - today).days
+        if remaining_days <= 1 and not task["completed"] and task["name"] not in st.session_state.sound_played:
             st.audio("https://upload.wikimedia.org/wikipedia/commons/c/cf/Alert-tone.mp3")
-            st.warning("⏰ งานนี้ใกล้ถึงเดดไลน์แล้ว!")
+            st.warning(f"⏰ งานนี้ใกล้ถึงเดดไลน์แล้ว! 🎅")
+            st.session_state.sound_played.add(task["name"])
 
     with colB:
         if st.button("✔", key=f"done{i}"):
+            for sub in task["subtasks"]:
+                sub["completed"] = True
             task["completed"] = True
-            st.success("งานเสร็จแล้ว!")
-
+            st.success("งานเสร็จแล้ว! 🎄")
+        st.write(" ")
         if st.button("🗑", key=f"delete{i}"):
             st.session_state.tasks.pop(i)
             st.rerun()
@@ -150,25 +261,19 @@ for i, task in enumerate(st.session_state.tasks):
     st.markdown("</div>", unsafe_allow_html=True)
 
 # -------------------- Calendar --------------------
-st.subheader("📅 ปฏิทินงาน") # ยังไม่เปิดใช้งาน
-
-calendar_date = st.date_input("เลือกวันที่เพื่อดูงานของวันนั้น", value=now)
-
-day_tasks = [
-    t for t in st.session_state.tasks
-    if t["deadline"] == str(calendar_date)
-]
-
+st.subheader("📅 ปฏิทินงาน")
+calendar_date = st.date_input("เลือกวันที่เพื่อดูงานของวันนั้น", value=today)
+day_tasks = [t for t in st.session_state.tasks if t["deadline"] == str(calendar_date)]
 if day_tasks:
     st.write("งานของวันนั้น:")
     for t in day_tasks:
-        st.write("- ", t["name"])
+        st.write(f"- {t['name']} (หมวดหมู่: {t['category']}, ความคืบหน้า: {progress}%)")
 else:
-    st.write("ไม่มีงานในวันนี้")
+    st.info("ไม่มีงานในวันนี้")
 
 # -------------------- Share Tasks --------------------
 st.subheader("📤 แชร์งานให้เพื่อน")
-
-export_data = json.dumps(st.session_state.tasks)
+export_data = json.dumps(st.session_state.tasks, ensure_ascii=False, indent=2)
 st.code(export_data, language="json")
-st.info("เพื่อนนำ JSON นี้ไปวางในแอปได้เลยเพื่อโหลดงานเข้าไป")
+b64 = base64.b64encode(export_data.encode()).decode()
+st.markdown(f'<a href="data:application/json;base64,{b64}" download="tasks.json">Download JSON 🎁</a>', unsafe_allow_html=True)
